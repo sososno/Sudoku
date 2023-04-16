@@ -1,122 +1,136 @@
-/**
- * klasa odpowiedzialna za budowanie i rozwiązanie planszy Sudoku
- */
-
-import java.util.Random;
+import java.util.*;
 
 public class SudokuBoard {
-
-    private int[][] board;
-    private static final int BOARD_SIZE = 9;
+    public static final int BOARD_SIZE = 9;
+    private int[][] puzzle;
+    private int[][] solution;
 
     public SudokuBoard() {
-        board = new int[BOARD_SIZE][BOARD_SIZE];
+        puzzle = new int[BOARD_SIZE][BOARD_SIZE];
+        solution = new int[BOARD_SIZE][BOARD_SIZE];
+        generateNewPuzzle();
     }
 
-    public void generateNewBoard() {
+    public void generateNewPuzzle() {
         fillValues();
         removeKDigits();
     }
 
-    private void fillValues() {
-        fillRemaining(0, 0);
+    private boolean solve() {
+        return solve(0, 0);
     }
 
-    private boolean fillRemaining(int i, int j) {
-        if (i == BOARD_SIZE - 1 && j == BOARD_SIZE) {
+    private boolean solve(int row, int col) {
+        if (row == BOARD_SIZE - 1 && col == BOARD_SIZE) {
             return true;
         }
 
-        if (j == BOARD_SIZE) {
-            i++;
-            j = 0;
+        if (col == BOARD_SIZE) {
+            row++;
+            col = 0;
         }
 
-        if (board[i][j] != 0) {
-            return fillRemaining(i, j + 1);
+        if (puzzle[row][col] != 0) {
+            return solve(row, col + 1);
         }
 
         for (int num = 1; num <= BOARD_SIZE; num++) {
-            if (isSafe(i, j, num)) {
-                board[i][j] = num;
-                if (fillRemaining(i, j + 1)) {
+            if (isSafe(row, col, num)) {
+                puzzle[row][col] = num;
+
+                if (solve(row, col + 1)) {
                     return true;
                 }
             }
+
+            puzzle[row][col] = 0;
         }
-        board[i][j] = 0;
+
         return false;
     }
 
-    private void removeKDigits() {
-        int digitsToRemovePerBox = 5;
-        for (int boxRow = 0; boxRow < BOARD_SIZE; boxRow += 3) {
-            for (int boxCol = 0; boxCol < BOARD_SIZE; boxCol += 3) {
-                int digitsRemoved = 0;
-                while (digitsRemoved < digitsToRemovePerBox) {
-                    int i = boxRow + new Random().nextInt(3);
-                    int j = boxCol + new Random().nextInt(3);
-                    if (board[i][j] != 0) {
-                        digitsRemoved++;
-                        board[i][j] = 0;
-                    }
-                }
-            }
-        }
+    public int[][] getPuzzle() {
+        return puzzle;
     }
 
+    public int[][] getSolution() {
+        solve();
+        for (int i = 0; i < BOARD_SIZE; i++) {
+            System.arraycopy(puzzle[i], 0, solution[i], 0, BOARD_SIZE);
+        }
+        return solution;
+    }
+
+    private void fillValues() {
+        fillValues(0, 0);
+    }
+
+    private boolean fillValues(int row, int col) {
+        if (row == BOARD_SIZE - 1 && col == BOARD_SIZE) {
+            return true;
+        }
+
+        if (col == BOARD_SIZE) {
+            row++;
+            col = 0;
+        }
+
+        if (puzzle[row][col] != 0) {
+            return fillValues(row, col + 1);
+        }
+
+        List< Integer > numbers = new ArrayList<>();
+        for (int i = 1; i <= BOARD_SIZE; i++) {
+            numbers.add(i);
+        }
+        Collections.shuffle(numbers);
+
+        for (int num : numbers) {
+            if (isSafe(row, col, num)) {
+                puzzle[row][col] = num;
+
+                if (fillValues(row, col + 1)) {
+                    return true;
+                }
+            }
+
+            puzzle[row][col] = 0;
+        }
+
+        return false;
+    }
 
     private boolean isSafe(int row, int col, int num) {
-        return !isInRow(row, num) && !isInCol(col, num) && !isInBox(row - row % 3, col - col % 3, num);
-    }
-
-    private boolean isInRow(int row, int num) {
-        for (int col = 0; col < BOARD_SIZE; col++) {
-            if (board[row][col] == num) {
-                return true;
+        for (int i = 0; i < BOARD_SIZE; i++) {
+            if (puzzle[row][i] == num || puzzle[i][col] == num) {
+                return false;
             }
         }
-        return false;
-    }
 
-    private boolean isInCol(int col, int num) {
-        for (int row = 0; row < BOARD_SIZE; row++) {
-            if (board[row][col] == num) {
-                return true;
-            }
-        }
-        return false;
-    }
+        int startRow = row - row % 3;
+        int startCol = col - col % 3;
 
-    private boolean isInBox(int row, int col, int num) {
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
-                if (board[row + i][col + j] == num) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    public boolean checkSolution() {
-        for (int row = 0; row < BOARD_SIZE; row++) {
-            for (int col = 0; col < BOARD_SIZE; col++) {
-                int value = board[row][col];
-                if (value == 0 || !isSafe(row, col, value)) {
+                if (puzzle[i + startRow][j + startCol] == num) {
                     return false;
                 }
             }
         }
+
         return true;
     }
 
-    public int getCellValue(int row, int col) {
-        return board[row][col];
-    }
+    private void removeKDigits() {
+        int k = 40;
+        while (k != 0) {
+            int i = (int) (Math.random() * BOARD_SIZE);
+            int j = (int) (Math.random() * BOARD_SIZE);
 
-    public void setCellValue(int row, int col, int value) {
-        board[row][col] = value;
+            if (puzzle[i][j] != 0) {
+                puzzle[i][j] = 0;
+                k--;
+            }
+        }
     }
 }
-

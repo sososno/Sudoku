@@ -1,84 +1,104 @@
 /**
  * klasa odpowiedzialna za tworzenie interfejsu użytkownika i obsługę zdarzeń
  */
-
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
-public class SudokuGUI extends JFrame implements ActionListener {
-
-    private SudokuBoard board;
-    private JTextField[][] fields;
+public class SudokuGUI {
+    private JFrame frame;
+    private JTextField[][] cells;
+    private SudokuBoard sudokuBoard;
+    private JPanel buttonPanel;
 
     public SudokuGUI() {
-        setTitle("Sudoku");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(600, 600);
+        frame = new JFrame("Sudoku");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(600, 600);
+        frame.setLayout(new BorderLayout());
 
-        board = new SudokuBoard();
-        fields = new JTextField[9][9];
+        sudokuBoard = new SudokuBoard();
+        cells = new JTextField[SudokuBoard.BOARD_SIZE][SudokuBoard.BOARD_SIZE];
+        frame.add(createBoard(), BorderLayout.CENTER);
 
-        createMenu();
-        createBoard();
+        buttonPanel = new JPanel();
+        frame.add(buttonPanel, BorderLayout.SOUTH);
+
+        createAndShowGUI();
     }
 
-    private void createMenu() {
-        JMenuBar menuBar = new JMenuBar();
-        JMenu gameMenu = new JMenu("Game");
-        JMenuItem newGameItem = new JMenuItem("New Game");
-        JMenuItem checkItem = new JMenuItem("Check");
-
-        newGameItem.addActionListener(this);
-        checkItem.addActionListener(this);
-
-        gameMenu.add(newGameItem);
-        gameMenu.add(checkItem);
-        menuBar.add(gameMenu);
-
-        setJMenuBar(menuBar);
-    }
-
-    private void createBoard() {
-        JPanel boardPanel = new JPanel(new GridLayout(9, 9));
-
-        for (int row = 0; row < 9; row++) {
-            for (int col = 0; col < 9; col++) {
-                fields[row][col] = new JTextField();
-                fields[row][col].setHorizontalAlignment(JTextField.CENTER);
-                boardPanel.add(fields[row][col]);
+    private JPanel createBoard() {
+        JPanel board = new JPanel(new GridLayout(SudokuBoard.BOARD_SIZE, SudokuBoard.BOARD_SIZE));
+        for (int row = 0; row < SudokuBoard.BOARD_SIZE; row++) {
+            for (int col = 0; col < SudokuBoard.BOARD_SIZE; col++) {
+                cells[row][col] = new JTextField();
+                cells[row][col].setHorizontalAlignment(JTextField.CENTER);
+                board.add(cells[row][col]);
             }
         }
-
-        add(boardPanel, BorderLayout.CENTER);
+        return board;
     }
 
-    @Override
-    public void actionPerformed(ActionEvent e) {
-        String command = e.getActionCommand();
+    private void createAndShowGUI() {
+        JButton newGameButton = new JButton("New Game");
+        newGameButton.addActionListener(e -> newGame());
+        buttonPanel.add(newGameButton);
 
-        if ("New Game".equals(command)) {
-            board.generateNewBoard();
-            for (int row = 0; row < 9; row++) {
-                for (int col = 0; col < 9; col++) {
-                    int value = board.getCellValue(row, col);
-                    fields[row][col].setText(value == 0 ? "" : String.valueOf(value));
+        JButton checkButton = new JButton("Check");
+        checkButton.addActionListener(e -> check());
+        buttonPanel.add(checkButton);
+
+        JButton showSolutionButton = new JButton("Show Solution");
+        showSolutionButton.addActionListener(e -> showSolution());
+        buttonPanel.add(showSolutionButton);
+
+        frame.setVisible(true);
+    }
+    private void newGame() {
+        sudokuBoard.generateNewPuzzle();
+        int[][] puzzle = sudokuBoard.getPuzzle();
+        for (int row = 0; row < SudokuBoard.BOARD_SIZE; row++) {
+            for (int col = 0; col < SudokuBoard.BOARD_SIZE; col++) {
+                if (puzzle[row][col] != 0) {
+                    cells[row][col].setText(String.valueOf(puzzle[row][col]));
+                    cells[row][col].setEditable(false);
+                    cells[row][col].setBackground(Color.LIGHT_GRAY);
+                } else {
+                    cells[row][col].setText("");
+                    cells[row][col].setEditable(true);
+                    cells[row][col].setBackground(Color.WHITE);
                 }
             }
-        } else if ("Check".equals(command)) {
-            for (int row = 0; row < 9; row++) {
-                for (int col = 0; col < 9; col++) {
-                    String text = fields[row][col].getText();
-                    int value = text.isEmpty() ? 0 : Integer.parseInt(text);
-                    board.setCellValue(row, col, value);
+        }
+    }
+
+    private void check() {
+        boolean isCorrect = true;
+        int[][] solution = sudokuBoard.getSolution();
+        for (int row = 0; row < SudokuBoard.BOARD_SIZE; row++) {
+            for (int col = 0; col < SudokuBoard.BOARD_SIZE; col++) {
+                String userInput = cells[row][col].getText();
+                if (!userInput.equals(String.valueOf(solution[row][col]))) {
+                    isCorrect = false;
+                    break;
                 }
             }
+        }
+        if (isCorrect) {
+            JOptionPane.showMessageDialog(frame, "Congratulations! You solved the puzzle!", "Success", JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(frame, "Some numbers are incorrect. Keep trying!", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
 
-            if (board.checkSolution()) {
-                JOptionPane.showMessageDialog(this, "Gratulacje! Sudoku zostało poprawnie rozwiązane!");
-            } else {
-                JOptionPane.showMessageDialog(this, "Niestety, rozwiązanie Sudoku jest niepoprawne.", "Błąd", JOptionPane.ERROR_MESSAGE);
+
+    private void showSolution() {
+        int[][] solution = sudokuBoard.getSolution();
+        for (int row = 0; row < SudokuBoard.BOARD_SIZE; row++) {
+            for (int col = 0; col < SudokuBoard.BOARD_SIZE; col++) {
+                if (cells[row][col].isEditable()) {
+                    cells[row][col].setText(String.valueOf(solution[row][col]));
+                    cells[row][col].setEditable(false);
+                }
             }
         }
     }
