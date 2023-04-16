@@ -1,5 +1,5 @@
 /**
- * klasa zawieraćmetodę main() i jest punktem startowym programu.
+ * klasa zawiera metodę main() i jest punktem startowym programu.
  */
 
 import javax.swing.*;
